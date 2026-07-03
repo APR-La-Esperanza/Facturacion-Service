@@ -7,7 +7,9 @@ import com.apr.Facturacion_Service.mapper.FacturaMapper;
 import com.apr.Facturacion_Service.model.EstadoFactura;
 import com.apr.Facturacion_Service.model.Factura;
 import com.apr.Facturacion_Service.repository.FacturaRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
@@ -17,6 +19,9 @@ public class FacturacionService {
 
     private final FacturaRepository repository;
     private final WebClient webClient;
+
+    @Value("${service.socio.url:http://socio-service}")
+    private String socioServiceUrl;
 
     public FacturacionService(FacturaRepository repository, WebClient webClient) {
         this.repository = repository;
@@ -101,19 +106,18 @@ public class FacturacionService {
 
     private void validarSocioEnSocioService(Long socioId) {
         try {
-            Boolean existe = webClient.get()
+            RestClient restClient = RestClient.builder()
+                    .baseUrl(socioServiceUrl)
+                    .build();
+            restClient.get()
                     .uri("/socios/" + socioId)
                     .retrieve()
-                    .toBodilessEntity()
-                    .map(response -> response.getStatusCode().is2xxSuccessful())
-                    .onErrorReturn(false)
-                    .block();
-
-            if (existe == null || !existe) {
-                throw new IllegalArgumentException("El Socio con ID " + socioId + " no existe en el sistema.");
-            }
+                    .toBodilessEntity();
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            throw new IllegalArgumentException("El Socio con ID " + socioId + " no existe en el sistema.");
         } catch (Exception e) {
-            throw new IllegalArgumentException("Error al comunicarse con Socio-Service: " + e.getMessage());
+            // Si Socio-Service no responde, continuamos
+            System.out.println("[WARN] No se pudo validar socio en Socio-Service: " + e.getMessage());
         }
     }
 }
