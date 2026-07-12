@@ -87,6 +87,15 @@ public class FacturacionController {
         return ResponseEntity.ok(service.actualizar(id, dto));
     }
 
+    @PostMapping("/{id}/notificar")
+    @Operation(summary = "Notificar factura simulada", description = "Genera y retorna un mensaje simulado de notificación de factura emitida al socio.")
+    @ApiResponse(responseCode = "200", description = "Mensaje simulado retornado con éxito.")
+    @ApiResponse(responseCode = "404", description = "La factura no existe.")
+    public ResponseEntity<java.util.Map<String, Object>> notificar(
+            @Parameter(description = "ID de la factura a notificar", required = true) @PathVariable Long id) {
+        return ResponseEntity.ok(service.notificarFactura(id));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar factura", description = "Elimina permanentemente una factura del sistema.")
     @ApiResponse(responseCode = "204", description = "Factura eliminada de forma exitosa.")

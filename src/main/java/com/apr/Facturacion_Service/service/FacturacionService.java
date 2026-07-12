@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class FacturacionService {
@@ -98,6 +100,30 @@ public class FacturacionService {
         return FacturaMapper.toResponseDTO(actualizada);
     }
 
+    public Map<String, Object> notificarFactura(Long id) {
+        Factura factura = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Factura no encontrada con id: " + id));
+
+        Map<String, Object> notificacion = new HashMap<>();
+        notificacion.put("tipo", "NOTIFICACION_FACTURA");
+        notificacion.put("socioId", factura.getSocioId());
+        notificacion.put("facturaId", factura.getId());
+        notificacion.put("periodo", factura.getPeriodo());
+        notificacion.put("consumoM3", factura.getConsumoM3());
+        notificacion.put("montoPesos", factura.getMontoPesos());
+        notificacion.put("estado", factura.getEstado());
+        notificacion.put("fechaVencimiento", factura.getFechaVencimiento());
+        notificacion.put("mensaje", String.format(
+                "Estimado socio %d: Su factura del periodo %s por $%.0f ha sido emitida. " +
+                "Consumo: %.2f m³. Vence el %s.",
+                factura.getSocioId(),
+                factura.getPeriodo(),
+                factura.getMontoPesos() != null ? factura.getMontoPesos().doubleValue() : 0.0,
+                factura.getConsumoM3() != null ? factura.getConsumoM3() : 0.0,
+                factura.getFechaVencimiento()));
+        notificacion.put("simulado", true);
+        return notificacion;
+    }
     public void eliminar(Long id) {
         Factura factura = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Factura no encontrada con id: " + id));
